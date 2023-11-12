@@ -7,27 +7,46 @@
 <body>
 
 <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
+<div class="container">
+    <h1>Lista delle pizze</h1>
 
-<h1>Lista delle pizze</h1>
+    <div class="d-flex align-items-center justify-content-between">
+        <h1>Book List</h1>
+        <form th:action="@{/pizzas}" method="GET">
+            <div class="input-group">
+                <input
+                        type="text"
+                        placeholder="Search by name"
+                        class="form-control" name="search"
+                        th:value="${param.search}"
+                >
+                <button class="btn btn-primary" type="submit">Search</button>
+            </div>
 
-<table class="table">
-    <thead>
-    <tr>
-        <th>Name</th>
-        <th>Immagine</th>
-        <th>Prezzo</th>
-        <th></th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="pizza : ${pizzaList}" th:object="${pizza}">
-        <td th:text="*{name}"></td>
-        <td><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></td>
-        <td th:text="*{price}"></td>
-    </tr>
-    </tbody>
-</table>
+        </form>
+    </div>
 
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Immagine</th>
+            <th>Prezzo</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="pizza : ${pizzaList}" th:object="${pizza}">
+            <td th:text="*{name}"></td>
+            <td><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></td>
+            <td th:text="*{price}"></td>
+            <td>
+                <a th:href="@{/pizzas/show/{id}(id=*{id})}" title="details"><i class="fa-solid fa-pizza-slice"></i></a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
 
 </body>
 </html>

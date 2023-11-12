@@ -218,3 +218,153 @@ devo mettere il dato(Pizza) e l'entità dell'id
             </nav>
             </body>
             </html>
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  ERRORS
+
+-posso creare delle pagini di errore per il 404 o 500 posso farlo creando una directory error
+e cimetto dentrp 2 classi 4xx e 5xx
+
+        <!doctype html>
+        <html lang="en" xmlns:th="http://www.thymeleaf.org">
+        <head th:insert="fragments/resources :: headResources('Error')"></head>
+        <body>
+        <div class="container">
+            <h1>I CANNOT RESPOND TO YOUR REQUEST</h1>
+            <div th:insert="fragments/resources :: errorDetails"></div>
+            <a th:href="@{/pizzas}" class="btn btn-primary">Go back to home</a>
+        </div>
+        </body>
+        </html>
+
+-e fare un fragment con i vari messaggi di errore -> status message exception e trace sono custom
+
+            <th:block th:fragment="errorDetails">
+                <p th:text="${status}"></p>
+                <p th:text="${message}"></p>
+                <p th:text="${exception}"></p>
+                <p th:text="${trace}"></p>
+            </th:block>
+
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  SHOW
+
+
+  -creiamo un controller per la show detail della pizza
+
+             @GetMapping("/show/{id}")
+                public String show(@PathVariable Integer id, Model model) {
+                    return "pizzas/show";
+                }
+
+-e una pagina html di dettaglio
+
+
+                <!doctype html>
+                <html lang="en" xmlns:th="http://www.thymeleaf.org">
+                <head th:insert="fragments/resources :: headResources('Pizza List')"></head>
+                <body>
+                <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
+
+                <h1>Pizza Detail</h1>
+
+                </body>
+                </html>
+
+-ora con http://localhost:8080/pizzas/show/1 potremmo vedere la pagina show
+
+
+-torno nel controller e inserisco -> cerca per id e usa una classe Optional ha dei metodi che mi dice se è
+vuota o piena se il result.isPresent(); mi restituisce true allora c'è e posso fare il return altrimenti do errore
+
+    Optional<Pizza> result = PizzaRepository.findById( id );
+    if (result.isPresent()) {
+        return "pizzas/show";
+    } else {
+      throw new ResponseStatusException( HttpStatus.NOT_FOUND, "book with id " + id + " not found" );
+     }
+
+-ora manca solo passare i dettagli della pizza nel template
+
+     if (result.isPresent()) {
+          model.addAttribute("pizza", result.get());
+          return "pizzas/show";
+
+-vado nel template e metto il nome la descrizione l'immagine e il prezzo e il created_at
+
+          <div class="container" th:object="${pizza}">
+              <h1 th:text="*{name}"></h1>
+              <hr>
+              <dl>
+                  <dt>Description</dt>
+                  <dd th:text="*{description}"></dd>
+                  <dd><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></dd>
+                  <dt>Prezzo</dt>
+                  <dd th:text="*{price}">></dd>
+                  <dt>Added to catalog</dt>
+                  <dd th:text="*{#temporals.format(created_at, 'yyyy-MM-dd')}"></dd>
+
+              </dl>
+          </div>
+
+- bisogna aggiungere alle pizzas-list un link per andare nel dettaglio della pizza
+
+         <td>
+            <a th:href="@{/pizzas/show/{id}(id=*{id})}" title="details"><i class="fa-solid fa-pizza-slice"></i></a>
+        </td>
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    RICERCA
+
+- posso cercare per nome della pizza
+
+-vado in pizza repository e inserisco
+
+        public interface PizzaRepository extends JpaRepository<Pizza, Integer> {
+            List<Pizza> findByNameContainingIgnoreCase(String nameKeyword);
+        }
+
+-questo mi permette di creare una query per fare una chiamata per nome
+-mettiamo un box ricerca nell'html gli diamo un action e un metodo get al form
+poi name="search" e il valore è param.search
+
+
+            <div class="d-flex align-items-center justify-content-between">
+                    <h1>Book List</h1>
+                    <form th:action="@{/pizzas}" method="GET">
+                        <div class="input-group">
+                            <input
+                                    type="text"
+                                    placeholder="Search by name"
+                                    class="form-control" name="search"
+                                    th:value="${param.search}"
+                            >
+                            <button class="btn btn-primary" type="submit">Search</button>
+                        </div>
+
+                    </form>
+                </div>
+
+
+-ora devo tornare nella index e implemantare il metodo se il parametro di ricerca è presente filtro la lista dei libri
+ altrimenti prendo tutti i libri non filtrati bookRepository recupera da database la lista di tutti i libri
+
+             @GetMapping
+                public String index(@RequestParam Optional<String> search, Model model) {
+                    List<Pizza> pizzaList;
+                    if (search.isPresent()) {
+
+                        pizzaList = PizzaRepository.findByNameContainingIgnoreCase( search.get() );
+                    } else {
+
+                        pizzaList = PizzaRepository.findAll();
+                    }
+
+                    model.addAttribute( "pizzaList", pizzaList );
+                    return "pizzas/pizzas-list";
+                }

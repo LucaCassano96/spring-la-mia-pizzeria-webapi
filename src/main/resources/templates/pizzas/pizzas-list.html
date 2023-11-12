@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="fragments/resources :: headResources('Pizza List')">
+
+</head>
+
+<body>
+
+<nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
+
+<h1>Lista delle pizze</h1>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Immagine</th>
+        <th>Prezzo</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="pizza : ${pizzaList}" th:object="${pizza}">
+        <td th:text="*{name}"></td>
+        <td><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></td>
+        <td th:text="*{price}"></td>
+    </tr>
+    </tbody>
+</table>
+
+
+</body>
+</html>

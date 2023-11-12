@@ -1,0 +1,220 @@
+CRUD
+
+-creo il progetto con Maven aggiungendo alcune dependencies
+-faccio la configurazione del progetto
+
+-prossimo passo prima di far partire il progetto è settare il database altrimenti non parte l'applicazione
+
+-creo il database db_pizzeria
+
+-nelle application.properties inserisco le rotte e le password del database
+
+        #data source
+        spring.datasource.url=jdbc:mysql://localhost:3306/db_pizzeria
+        spring.datasource.username=root
+        spring.datasource.password=root
+
+-Ora possiamo far partire l'applicazione è collegato con il database
+
+-Ora dobbiamo dire al database le azioni che farà incolliamo questa riga sempre in application.properties
+in questo caso mettiamo create percè dobbiamo creare la tabella e le colonne
+
+        # Hibernate ddl auto (create, create-drop, validate, update)
+        spring.jpa.hibernate.ddl-auto=create
+
+
+-Questo aiuta noi a vedere SQL in console formattato e comprensibile
+
+            # Log SQL query (no in production)
+            spring.jpa.show-sql=true
+            spring.jpa.properties.hibernate.format_sql=true
+
+-Per ultimo questo della cache
+
+
+            spring.thymeleaf.cache=false
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+-CREAZIONE TABELLA
+
+-dobbiamo creare l'entità Pizza con i vari attributi
+-creo una cartella model e dentro una classe Pizza
+-Specifichiamo che è un @Entity e cominciamo a dargli gli attributi
+-Id che dovrà essere autoincrementale (@GeneratedValue(strategy = GenerationType.IDENTITY))
+e dobbiamo specificare che questoè l'@id
+-insriamo tutti gli attributi
+-inseriamo getting e setter
+
+
+            package model;
+
+            import jakarta.persistence.Entity;
+            import jakarta.persistence.GeneratedValue;
+            import jakarta.persistence.GenerationType;
+            import jakarta.persistence.Id;
+
+            @Entity
+            public class Pizza {
+
+                @Id
+                @GeneratedValue(strategy = GenerationType.IDENTITY)
+                private Integer id;
+
+                private String description;
+                private String photoUrl;
+                private double price;
+
+                public Integer getId() {
+                    return id;
+                }
+
+                public void setId(Integer id) {
+                    this.id = id;
+                }
+
+                public String getDescription() {
+                    return description;
+                }
+
+                public void setDescription(String description) {
+                    this.description = description;
+                }
+
+                public String getPhotoUrl() {
+                    return photoUrl;
+                }
+
+                public void setPhotoUrl(String photoUrl) {
+                    this.photoUrl = photoUrl;
+                }
+
+                public double getPrice() {
+                    return price;
+                }
+
+                public void setPrice(double price) {
+                    this.price = price;
+                }
+            }
+
+-facciamo partire l'app e dovremmo avere tutte le colonne
+-adesso dobbiamo inserire i dati in tabella
+-creiamo un file import.sql e mettimao dentro la Insert con tutti gli attributi della pizza
+
+    INSERT INTO pizzas (created_at, description, name, photo_url, price) VALUES ('2023-11-09T11:35:00','pizza salsa e mozzarella', 'Margherita','https://www.tavolartegusto.it/wp/wp-content/uploads/2020/05/Pizza-napoletana-Ricetta-della-Pizza-Napoletana-Pizza-Margherita.jpg', 5.00);
+
+-prossimo passaggio devo creare la BookRepository -> metto in una repository e faccio una interfaccia e scrivo
+devo mettere il dato(Pizza) e l'entità dell'id
+
+        public interface BookRepository extends JpaRepository<Pizza, Integer> {
+
+        }
+
+-Ora voglio vedere i miei dati quindi creo il controller
+-richiamo il repository e lo metto dentro una lista di <Pizza> e faccio .findAll
+
+
+               @Controller
+               @RequestMapping("/pizzas")
+               public class PizzaController {
+
+
+                   private PizzaRepository PizzaRepository;
+
+                   @Autowired
+                   public PizzaController(com.experis.springlamiapizzeriacrud.repository.PizzaRepository pizzaRepository) {
+                       PizzaRepository = pizzaRepository;
+                   }
+
+                   @GetMapping
+                   public String index(Model model) {
+                       List<Pizza> pizzaList = PizzaRepository.findAll();
+                       model.addAttribute( " pizzaList ", pizzaList );
+                       return "pizzas/pizzas-list";
+                   }
+               }
+
+
+-posso creare i fragments
+
+        <html xmlns:th="http://www.thymeleaf.org">
+
+        <head>
+            <th:block th:fragment="headResources(title)">
+                <meta charset="UTF-8">
+                <meta name="viewport"
+                      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+                <meta http-equiv="X-UA-Compatible" content="ie=edge">
+                <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.4.2/css/all.min.css}">
+                <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.2/css/bootstrap.min.css}">
+                <script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}" defer></script>
+                <title th:text="${title}"></title>
+            </th:block>
+
+        </head>
+
+        </html>
+
+-creo l'html con una tabella
+
+           <body>
+
+           <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
+
+           <h1>Lista delle pizze</h1>
+
+           <table class="table">
+               <thead>
+               <tr>
+                   <th>Name</th>
+                   <th>Immagine</th>
+                   <th>Prezzo</th>
+                   <th></th>
+               </tr>
+               </thead>
+               <tbody>
+               <tr th:each="pizza : ${pizzaList}" th:object="${pizza}">
+                   <td th:text="*{name}"></td>
+                   <td><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></td>
+                   <td th:text="*{price}"></td>
+               </tr>
+               </tbody>
+           </table>
+
+
+           </body>
+           </html>
+
+-creo il fragment per la navBar
+
+            <html xmlns:th="http://www.thymeleaf.org">
+            <body>
+            <nav th:fragment="topNavbar(area)" class="navbar navbar-expand-lg bg-primary navbar-dark">
+
+                <div class="container-fluid">
+                    <a class="navbar-brand" th:href="@{/pizzas}">Lista pizze</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link" th:classAppend="${area == 'pizzas' ? 'active' : ''}"
+                                   th:href="@{/pizzas}">Pizzas</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" th:classAppend="${area == 'users' ? 'active' : ''}"
+                                   th:href="@{/users}">Users</a>
+                            </li>
+                        </ul>
+
+                    </div>
+                </div>
+
+            </nav>
+            </body>
+            </html>

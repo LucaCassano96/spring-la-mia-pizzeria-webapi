@@ -7,23 +7,28 @@
 <body>
 
 <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
-<div class="container">
-    <h1>Lista delle pizze</h1>
+<div class="container my-5">
+    <div class="d-flex justify-content-between">
+        <h1>Lista delle pizze</h1>
 
-    <div class="d-flex align-items-center justify-content-between">
-        <h1>Book List</h1>
-        <form th:action="@{/pizzas}" method="GET">
-            <div class="input-group">
-                <input
-                        type="text"
-                        placeholder="Search by name"
-                        class="form-control" name="search"
-                        th:value="${param.search}"
-                >
-                <button class="btn btn-primary" type="submit">Search</button>
-            </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <form th:action="@{/pizzas}" method="GET">
+                <div class="input-group">
+                    <input
+                            type="text"
+                            placeholder="Search by name"
+                            class="form-control" name="search"
+                            th:value="${param.search}"
+                    >
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
 
-        </form>
+            </form>
+        </div>
+    </div>
+
+    <div class="my-3">
+        <a th:href="@{/pizzas/create}" class="btn btn-primary">Add new pizza</a>
     </div>
 
     <table class="table">

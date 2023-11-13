@@ -368,3 +368,171 @@ poi name="search" e il valore è param.search
                     model.addAttribute( "pizzaList", pizzaList );
                     return "pizzas/pizzas-list";
                 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    CREATE
+
+- per creare una create devo avere due controller diversi uno che mi porta della create una dello store
+-creiamo il controller della create che ci manderà su una pagina dove metterò il mio form
+
+            @GetMapping("/create")
+            public String create() {
+                return "pizzas/create";
+            }
+
+-creo una pagina html chiamata create
+- ora inserisco nella pizzas-list il link a questa nuova pagina
+
+            <div class="my-3">
+                 <a th:href="@{/pizzas/create}" class="btn btn-primary">Add new pizza</a>
+             </div>
+
+-ora torno nel controller e devo passare al template una pizza vuota ma con tutti i parametri
+(nome, descrizione ecc) lo faccio con il model e creando una nuova pizza
+
+           @GetMapping("/create")
+            public String create(Model model) {
+                model.addAttribute( "pizza", new Pizza() );
+                return "pizzas/create";
+            }
+
+-ora nel' html ho la pizza e i suoi parametri il th:object="${pizza}" è quello che mi arriva dal controller
+il th:field= è il name e il value insieme
+
+
+            <div class="container my-5">
+                <h1>Create a new pizza</h1>
+
+                <div>
+                    <form id="pizza-create" method="POST" th:action="@{/pizzas/create/store}" th:object="${pizza}" class="row gy-2">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Insert description</label>
+                            <textarea class="form-control" id="description" rows="3" th:field="*{description}"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="photo_url" class="form-label">Insert image</label>
+                            <input type="text" class="form-control" id="photo_url" th:field="*{photo_url}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Insert price</label>
+                            <input type="number" class="form-control" id="price" th:field="*{price}">
+                        </div>
+
+                        <div>
+                            <button class="btn btn-primary" type="submit">Save</button>
+                            <a th:href="@{/pizzas}" class="btn bg-danger text-white">Cancel</a>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+
+-ora devo creare il controller per la post con lo store per poter inviare i dati al database -> method="POST" th:action="@{/pizzas/create/store}"
+-gli do il  Pizza formPizza così lui è in grado di ricostruire una pizza in base ai dati che gli ho passato
+- formPizza.setCreated_at( LocalDateTime.now() ); gli setto a mano la Created_at in quanto no la chiedo all'utente
+
+                 @PostMapping("/create/store")
+                   public String store(Model model, Pizza formPizza) {
+                       formPizza.setCreated_at( LocalDateTime.now() );
+                       PizzaRepository.save( formPizza );
+                       return "redirect:/pizzas";
+                   }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+   VALIDAZIONI
+
+-inserisco questa dependecy
+
+                   <dependency>
+                        <groupId>org.springframework.boot</groupId>
+                         <artifactId>spring-boot-starter-validation</artifactId>
+                   </dependency>
+
+-per le validazioni vado sul model e implemento con la nuova libreria le validazioni
+
+
+                        @NotBlank
+                        @Size(max = 250)
+                        private String name;
+
+                        @NotBlank
+                        @Lob
+                        private String description;
+
+                        @NotBlank
+                        private String photo_url;
+
+                        @NotNull
+                        @Digits(integer = 6, fraction = 2)
+                        private double price;
+
+
+-ora torno nel controller create e aggiungo @valid così viene controllato basandosi su quello che
+ho scritto nel model
+-inserisco anche BindingResult BindingResult che mi salva gli errori
+
+
+                            @PostMapping("/create/store")
+                            public String store(@Valid Pizza formPizza, BindingResult BindingResult) {
+                                formPizza.setCreated_at( LocalDateTime.now() );
+                                PizzaRepository.save( formPizza );
+                                return "redirect:/pizzas";
+                            }
+
+-inserisco la condizio che se c'è un errore mi reindirizza alla stessa pagina così l'utente puoò correggere
+
+
+
+                                 @PostMapping("/create/store")
+                                 public String store(@Valid @ModelAttribute("pizza") Pizza formPizza, BindingResult BindingResult) {
+
+                                     if (BindingResult.hasErrors()) {
+                                         return "pizzas/create";
+                                     }
+
+                                     formPizza.setCreated_at( LocalDateTime.now() );
+                                     PizzaRepository.save( formPizza );
+                                     return "redirect:/pizzas";
+                                 }
+
+- adesso metto i messaggi nell'html usoo th:errorClass="is-invalid" che è una classe di bootsrap
+-#fields.hasErrors('name') qui metto il campo da validare th:each="err : ${#fields.errors('name')} itero sugli errori e prendo
+-l'erore del nome th:text="${err} mostro l'errore a schermo
+
+
+
+                                 <label for="name" class="form-label">Name</label>
+                                  <input type="text" class="form-control" id="name" th:field="*{name}" th:errorClass="is-invalid">
+                                      <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback">
+                                           <ul>
+                                               <li th:each="err : ${#fields.errors('name')}" th:text="${err}"></li>
+                                            </ul>
+                                       </div>
+
+
+-inserisco gli errori come messaggio
+
+                                    @NotBlank(message = "name must not be blank")
+                                    @Size(max = 255, message = "Length must be less than 255")
+
+                                    private String name;
+                                    @NotBlank(message = "description must not be blank")
+
+                                    @Lob
+                                    private String description;
+                                    @NotBlank(message = "photo_url must not be blank")
+                                    private String photo_url;
+
+                                    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+                                    @DecimalMax(value = "999999.99", message = "Price must not exceed 999999.99")
+                                    private double price;

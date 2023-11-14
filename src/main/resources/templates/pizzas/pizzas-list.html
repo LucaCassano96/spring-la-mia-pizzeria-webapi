@@ -48,6 +48,19 @@
             <td>
                 <a th:href="@{/pizzas/show/{id}(id=*{id})}" title="details"><i class="fa-solid fa-pizza-slice"></i></a>
             </td>
+            <td>
+                <a th:href="@{/pizzas/edit/{id}(id=*{id})}" title="edit"><i class="fa-solid fa-pen-to-square"></i></a>
+            </td>
+
+            <td>
+                <form th:action="@{/pizzas/delete/{id}(id=*{id})}" method="POST"
+                      onsubmit="return confirm('Are you sure?')">
+
+                    <button type="submit" class="btn bg-danger text-light"><i
+                            class="fa-solid fa-trash"></i>
+                    </button>
+                </form>
+            </td>
         </tr>
         </tbody>
     </table>

@@ -73,4 +73,50 @@ public class PizzaController {
         PizzaRepository.save( formPizza );
         return "redirect:/pizzas";
     }
+
+
+    //EDIT
+
+    @GetMapping("/edit/{id}")
+    public String edit(@PathVariable Integer id, Model model) {
+        Optional<Pizza> result = PizzaRepository.findById( id );
+
+        if (result.isPresent()) {
+            model.addAttribute( "pizza", result.get() );
+            return "pizzas/edit";
+        } else {
+            throw new ResponseStatusException( HttpStatus.NOT_FOUND, "book with id " + id + " not found" );
+        }
+
+
+    }
+
+    //UPDATE
+
+    @PostMapping("/edit/update/{id}")
+    public String update(@PathVariable Integer id, @Valid @ModelAttribute("pizza") Pizza formPizza, BindingResult BindingResult) {
+
+        if (BindingResult.hasErrors()) {
+            return "pizzas/edit";
+        }
+        Pizza pizzaToEdit = PizzaRepository.findById( id ).orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+        pizzaToEdit.setName( formPizza.getName() );
+        pizzaToEdit.setDescription( formPizza.getDescription() );
+        pizzaToEdit.setPhoto_url( formPizza.getPhoto_url() );
+        pizzaToEdit.setPrice( formPizza.getPrice() );
+
+        Pizza savedPizza = PizzaRepository.save( pizzaToEdit );
+        return "redirect:/pizzas/show/" + savedPizza.getId();
+    }
+
+
+    //DELETE
+    @PostMapping("/delete/{id}")
+    public String delete(@PathVariable Integer id) {
+
+        Pizza pizzaToDelete = PizzaRepository.findById( id ).orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+        PizzaRepository.deleteById( id );
+        return "redirect:/pizzas";
+    }
+
 }

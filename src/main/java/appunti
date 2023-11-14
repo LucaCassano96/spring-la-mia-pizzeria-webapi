@@ -536,3 +536,164 @@ ho scritto nel model
                                     @DecimalMin(value = "0.01", message = "Price must be greater than 0")
                                     @DecimalMax(value = "999999.99", message = "Price must not exceed 999999.99")
                                     private double price;
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+      EDIT/UPDATE
+
+-primo passo è creare il link che mi porta al controller e quindi alla pagina di edit
+-aggiungo in pizzas list la nuova icona con il link
+
+                    <td>
+                        <a th:href="@{/pizzas/edit/{id}(id=*{id})}" title="edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                     </td>
+
+-ora faccio il controller -> passo l'id se è presente mostro la pagina "pizzas/edit" altrimenti mando l'eccezione
+
+
+                       @GetMapping("/edit/{id}")
+                           public String edit(@PathVariable Integer id, Model model) {
+                               Optional<Pizza> result = PizzaRepository.findById( id );
+
+                               if (result.isPresent()) {
+                                   model.addAttribute( "pizza", result.get() );
+                                   return "pizzas/edit";
+                               } else {
+                                   throw new ResponseStatusException( HttpStatus.NOT_FOUND, "book with id " + id + " not found" );
+                               }
+
+                           }
+
+-si crea il tempalte per la edit
+
+
+
+                      <!doctype html>
+                      <html lang="en" xmlns:th="http://www.thymeleaf.org">
+                      <head th:insert="fragments/resources :: headResources('Edit Pizza')">
+
+                      </head>
+
+                      <body>
+
+                      <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
+                      <div class="container my-5">
+                          <h1>Edit a pizza</h1>
+                      </div>
+
+                      </body>
+                      </html>
+
+
+-ora si inserisce il form -> molto simile alla create cambia il th:action="@{/pizzas/edit/update/{id}(id=${pizza.id})}"
+-i campi saranno già riempiti perchè quando gli passo la pizza con l'id io gli passo ua pizza già fatta con tutti i valori già definiti
+
+
+                       <form id="pizza-edit" method="POST" th:action="@{/pizzas/edit/update/{id}(id=${pizza.id})}" th:object="${pizza}"
+                                     class="row gy-2">
+                                   <div class="mb-3">
+                                       <label for="name" class="form-label">Name</label>
+                                       <input type="text" class="form-control" id="name" th:field="*{name}" th:errorClass="is-invalid">
+                                       <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback">
+                                           <ul>
+                                               <li th:each="err : ${#fields.errors('name')}" th:text="${err}"></li>
+                                           </ul>
+                                       </div>
+                                   </div>
+                                   <div class="mb-3">
+                                       <label for="description" class="form-label">Insert description</label>
+                                       <textarea class="form-control" id="description" rows="3" th:field="*{description}"
+                                                 th:errorClass="is-invalid"></textarea>
+                                       <div th:if="${#fields.hasErrors('description')}" class="invalid-feedback">
+                                           <ul>
+                                               <li th:each="err : ${#fields.errors('description')}" th:text="${err}"></li>
+                                           </ul>
+                                       </div>
+                                   </div>
+                                   <div class="mb-3">
+                                       <label for="photo_url" class="form-label">Insert image</label>
+                                       <input type="text" class="form-control" id="photo_url" th:field="*{photo_url}"
+                                              th:errorClass="is-invalid">
+                                       <div><img class="my-2" th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></div>
+                                       <div th:if="${#fields.hasErrors('photo_url')}" class="invalid-feedback">
+                                           <ul>
+                                               <li th:each="err : ${#fields.errors('photo_url')}" th:text="${err}"></li>
+                                           </ul>
+                                       </div>
+                                   </div>
+                                   <div class="mb-3">
+                                       <label for="price" class="form-label">Insert price</label>
+                                       <input type="number" class="form-control" id="price" th:field="*{price}" th:errorClass="is-invalid">
+                                       <div th:if="${#fields.hasErrors('price')}" class="invalid-feedback">
+                                           <ul>
+                                               <li th:each="err : ${#fields.errors('price')}" th:text="${err}"></li>
+                                           </ul>
+                                       </div>
+                                   </div>
+
+                                   <div>
+                                       <button class="btn btn-primary" type="submit">Save</button>
+                                       <a th:href="@{/pizzas}" class="btn bg-danger text-white">Cancel</a>
+                                   </div>
+                               </form>
+
+
+-ora il prossimo passo è il controller di update con il metodo post che si collega a /pizzas/edit/update/{id}
+
+
+                                 @PostMapping("/edit/update/{id}")
+                                    public String update(@PathVariable Integer id, @Valid @ModelAttribute("pizza") Pizza formPizza, BindingResult BindingResult) {
+
+                                        if (BindingResult.hasErrors()) {
+                                            return "pizzas/edit";
+                                        }
+                                        Pizza savedPizza = PizzaRepository.save( formPizza );
+                                        return "redirect:/pizzas";
+                                    }
+
+-Il problema è il created_at è stao cancellato perchè non è un campo del form e quindi con il submit non viene
+salvato
+
+-così facendo prendo e setto solo i dati che cambiano e updato il create_at rimane invariato e gli passo pizzaToEdit
+invece di formPizza(che è quella totalmente nuova). pizzaToEdit contiene gli elementi nuovi ma anche quelli già presenti in database
+
+                                      @PostMapping("/edit/update/{id}")
+                                         public String update(@PathVariable Integer id, @Valid @ModelAttribute("pizza") Pizza formPizza, BindingResult BindingResult) {
+
+                                             if (BindingResult.hasErrors()) {
+                                                 return "pizzas/edit";
+                                             }
+                                             Pizza pizzaToEdit = PizzaRepository.findById( id ).orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+                                             pizzaToEdit.setName( formPizza.getName() );
+                                             pizzaToEdit.setDescription( formPizza.getDescription() );
+                                             pizzaToEdit.setPhoto_url( formPizza.getPhoto_url() );
+                                             pizzaToEdit.setPrice( formPizza.getPrice() );
+
+                                             Pizza savedPizza = PizzaRepository.save( pizzaToEdit );
+                                             return "redirect:/pizzas";
+                                         }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        DELETE
+
+-Iniziamo creando l'icona con il pulsante di delete che sarà un form perchè abbiamo il metodo post
+
+
+                         <form th:action="@{/pizzas/delete/{id}(id=*{id})}" method="POST">
+
+                              <button type="submit" class="btn bg-danger text-light"><i class="fa-solid fa-trash"></i></button>
+                          </form>
+
+-creiamo il controller
+
+
+                                @PostMapping("/delete/{id}")
+                                public String delete(@PathVariable Integer id) {
+
+                                    Pizza pizzaToDelete = PizzaRepository.findById( id ).orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+                                    PizzaRepository.deleteById( id );
+                                    return "redirect:/pizzas";
+                                }

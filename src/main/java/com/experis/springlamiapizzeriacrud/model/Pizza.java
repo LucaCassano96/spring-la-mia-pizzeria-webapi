@@ -7,11 +7,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "pizzas")
 public class Pizza {
 
+    @OneToMany(mappedBy = "pizza", cascade = CascadeType.REMOVE)
+    private List<SpecialOffer> specialOffer;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -74,5 +77,13 @@ public class Pizza {
 
     public void setCreated_at(LocalDateTime created_at) {
         this.created_at = created_at;
+    }
+
+    public List<SpecialOffer> getSpecialOffer() {
+        return specialOffer;
+    }
+
+    public void setSpecialOffer(List<SpecialOffer> specialOffer) {
+        this.specialOffer = specialOffer;
     }
 }

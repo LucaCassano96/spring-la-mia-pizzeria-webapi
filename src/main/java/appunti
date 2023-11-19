@@ -697,3 +697,274 @@ invece di formPizza(che è quella totalmente nuova). pizzaToEdit contiene gli el
                                     PizzaRepository.deleteById( id );
                                     return "redirect:/pizzas";
                                 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+        RELAZIONi
+
+    ONE TO MANY
+
+
+ -creiamo la nuova entità offerte speciali in cui mettiamo tutte le colonne
+ -  @ManyToOne
+    private Pizza pizza; -> questo crea la relazione con Pizza e abbiamo un elemento pizza anchw qui dentro
+
+
+                @Entity
+                @Table(name = "special_offer")
+                public class SpecialOffer {
+
+                    @Id
+                    @GeneratedValue(strategy = GenerationType.IDENTITY)
+                    private Integer id;
+
+                    private LocalDate startDate;
+                    private LocalDate endDate;
+
+                    private String title;
+
+                    @ManyToOne
+                    private Pizza pizza;
+
+                    (getter e setter...)
+
+
+-Nella classe Pizza aggiungo una lista di specialOffer in una lista e metto il tipo di relazione
+
+                 @OneToMany(mappedBy = "pizza")
+                  private List<SpecialOffer> specialOffer;
+
+-fare i getter e setter di Pizza per specialOffer
+
+
+-rilancio il database
+
+- vado in show e faccio la tabella con le offerte
+
+
+
+                   <section>
+
+                          <h1>Create a new offer</h1>
+                             <h2 class="text-muted" th:text="${specialOffer.pizza.name}"></h2>
+
+                             <div>
+                                 <form id="offer-create" method="POST" th:action="@{/special_offer/create/store}" th:object="${specialOffer}"
+                                       class="row gy-2">
+                                     <div class="mb-3">
+                                         <label for="title" class="form-label">Titolo</label>
+                                         <input type="text" class="form-control" id="title" th:field="*{title}" th:errorClass="is-invalid">
+                                         <div th:if="${#fields.hasErrors('title')}" class="invalid-feedback">
+                                             <ul>
+                                                 <li th:each="err : ${#fields.errors('title')}" th:text="${err}"></li>
+                                             </ul>
+                                         </div>
+                                     </div>
+                                     <div class="mb-3">
+                                         <label for="startDate" class="form-label">Insert start date</label>
+                                         <input type="date" class="form-control" id="startDate" th:field="*{startDate}"
+                                                th:errorClass="is-invalid">
+                                         <div th:if="${#fields.hasErrors('startDate')}" class="invalid-feedback">
+                                             <ul>
+                                                 <li th:each="err : ${#fields.errors('startDate')}" th:text="${err}"></li>
+                                             </ul>
+                                         </div>
+                                     </div>
+                                     <div class="mb-3">
+                                         <label for="endDate" class="form-label">Insert end date</label>
+                                         <input type="date" class="form-control" id="endDate" th:field="*{endDate}"
+                                                th:errorClass="is-invalid">
+                                         <div th:if="${#fields.hasErrors('endDate')}" class="invalid-feedback">
+                                             <ul>
+                                                 <li th:each="err : ${#fields.errors('endDate')}" th:text="${err}"></li>
+                                             </ul>
+                                         </div>
+                                     </div>
+                                     <div>
+                                         <button class="btn btn-primary" type="submit">Save</button>
+                                         <a th:href="@{/pizzas/show/{pizzaId}(pizzaId=*{pizza.id})}" class="btn bg-danger text-white">Cancel</a>
+                                     </div>
+                                 </form>
+
+                             </div>
+
+
+- creiamo un nuovo controller per le offerte -> SpecialOfferController che mi manda a special_offer/form
+
+        @Controller
+        @RequestMapping("/special_offer")
+        public class SpecialOfferController {
+
+
+            //CREATE
+
+            @GetMapping("/create")
+            public String create() {
+                return "specialOffer/form";
+            }
+         }
+
+-creiamo l'htlm dentro una nuova directory specialOffer e dentro form
+
+-vado in show e metto il collegamanto
+
+          <a th:href="@{/special_offer/create}"
+
+-però è utile portarsi dietro l'id della pizza torniamo nel controller e gli passiamo il request param
+
+               @GetMapping("/create")
+               public String create(@RequestParam Integer pizzaId) {
+                   return "specialOffer/form";
+               }
+
+-Poi nel template
+
+          <a th:href="@{/special_offer/create(pizzaId=*{id})}"
+          ><i class="fa-solid fa-circle-plus"></i></a>
+
+-completiamo il controller in cui creiamo un oggetto SpecialOffer che conterra i dati el form
+-aggiungo la   specialOffer.setStartDate( LocalDate.now() ); -> così la ho anchè nella create
+
+           @GetMapping("/create")
+              public String create(@RequestParam Integer pizzaId, Model model) {
+                  SpecialOffer specialOffer = new SpecialOffer();
+                  specialOffer.setStartDate( LocalDate.now() );
+                  model.addAttribute( "specialOffer", new SpecialOffer() );
+                  return "specialOffer/form";
+              }
+
+-devo aggiungere nelle application
+
+              spring.mvc.format.date=yyyy-MM-dd
+              spring.mvc.format.date-time=yyyy-MM-dd HH:mm:ss
+              spring.mvc.format.time=HH:mm:ss
+
+- iplementiamo il form
+
+             @GetMapping("/create")
+                public String create(@RequestParam Integer pizzaId, Model model) {
+                    Pizza pizza = pizzaRepository.findById( pizzaId ).orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+                    SpecialOffer specialOffer = new SpecialOffer();
+                    specialOffer.setStartDate( LocalDate.now() );
+                    specialOffer.setPizza( pizza );
+                    model.addAttribute( "specialOffer", specialOffer );
+                    return "specialOffer/form";
+                }
+
+-nell' html possiamo mettere il nome della pizza e anche l'oggetto pizza ma come hidden così lo passiamo
+nel form
+
+                <h2 class="text-muted" th:text="${specialOffer.pizza.name}"></h2>
+                <div>
+                     <input type="hidden" id="pizza" th:field="*{pizza}">
+                </div>
+
+
+-bisogna fare lo store
+
+
+                @PostMapping("/create/store")
+                  public String store(@Valid @ModelAttribute("specialOffer") SpecialOffer formSpecialOffer, BindingResult bindingResult) {
+                      if (bindingResult.hasErrors()) {
+                          return "specialOffer/form";
+                      }
+                      SpecialOffer savedSpecialOffer = specialOfferRepository.save( formSpecialOffer );
+                      return "redirect:/pizzas/show/" + savedSpecialOffer.getPizza().getId();
+                  }
+
+
+       //EDIT
+
+-inseriamo il link nello show
+
+
+                 <td>
+                    <a th:href="@{/special_offer/edit/{id}(id=*{id})}" title="edit"><i
+                     class="fa-solid fa-pen-to-square"></i></a>
+                 </td>
+
+-creiamo il controller
+
+                  @GetMapping("/edit/{id}")
+                    public String edit(@PathVariable Integer id, Model model) {
+                        Optional<SpecialOffer> result = specialOfferRepository.findById( id );
+
+                        if (result.isPresent()) {
+                            model.addAttribute( "specialOffer", result.get() );
+                            return "specialOffer/edit";
+                        } else {
+                            throw new ResponseStatusException( HttpStatus.NOT_FOUND, "special offer with id " + id + " not found" );
+                        }
+
+
+                    }
+
+-creiamo il tempalte che è uguale al create form
+
+- creiamo il collegamanto con l'update
+
+                   th:action="@{/special_offer/edit/update/{id}(id=${specialOffer.id})}"
+
+-creiamo l'update
+
+
+                    @PostMapping("/edit/update/{id}")
+                    public String update(@PathVariable Integer id, @Valid @ModelAttribute("specialOffer") SpecialOffer formSpecialOffer, BindingResult bindingResult) {
+
+                        if (bindingResult.hasErrors()) {
+                            return "specialOffer/edit";
+                        }
+
+                        SpecialOffer specialOfferToEdit = specialOfferRepository.findById( id )
+                                .orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+
+                        specialOfferToEdit.setTitle( formSpecialOffer.getTitle() );
+                        specialOfferToEdit.setStartDate( formSpecialOffer.getStartDate() );
+                        specialOfferToEdit.setEndDate( formSpecialOffer.getEndDate() );
+
+
+                        SpecialOffer updatedSpecialOffer = specialOfferRepository.save( specialOfferToEdit );
+
+                        return "redirect:/pizzas/show/" + updatedSpecialOffer.getPizza().getId();
+                    }
+
+
+
+   //DELETE
+
+- creare il form in show
+
+
+                    <form th:action="@{/special_offer/delete/{id}(id=*{id})}" method="POST"
+                             onsubmit="return confirm('Are you sure?')">
+
+                        <button type="submit" class="btn bg-danger text-light"><i
+                           class="fa-solid fa-trash"></i>
+                        </button>
+                    </form>
+
+-creiamo il controller
+
+                     @PostMapping("/delete/{id}")
+                         public String delete(@PathVariable Integer id) {
+
+                             SpecialOffer specialOfferToDelete = specialOfferRepository.findById( id ).orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND ) );
+                             specialOfferRepository.deleteById( id );
+                             return "redirect:/pizzas/show/" + specialOfferToDelete.getPizza().getId();
+                         }
+
+-se volessi cancellare una pizza con un' offerta non funzionerebbe
+-perchè c'è una relazione che lega i due elementi
+-aggiungo cascade remove sulla  @OneToMany nel Model così a cascata mi elimina anche tutti gli elementi
+special offer collegate
+
+                    @OneToMany(mappedBy = "pizza", cascade = CascadeType.REMOVE)
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        MANY TO MANY
+
+

@@ -5,18 +5,62 @@
 <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
 
 <div class="container" th:object="${pizza}">
-    <h1 th:text="*{name}"></h1>
-    <hr>
-    <dl>
-        <dt>Description</dt>
-        <dd th:text="*{description}"></dd>
-        <dd><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></dd>
-        <dt>Prezzo</dt>
-        <dd th:text="*{price}">></dd>
-        <dt>Added to catalog</dt>
-        <dd th:text="*{#temporals.format(created_at, 'yyyy-MM-dd')}"></dd>
+    <section>
+        <h1 th:text="*{name}"></h1>
+        <hr>
+        <dl>
+            <dt>Description</dt>
+            <dd th:text="*{description}"></dd>
+            <dd><img th:src="*{photo_url}" style="max-width: 100px; max-height: 100px;"/></dd>
+            <dt>Prezzo</dt>
+            <dd th:text="*{price}">></dd>
+            <dt>Added to catalog</dt>
+            <dd th:text="*{#temporals.format(created_at, 'yyyy-MM-dd')}"></dd>
 
-    </dl>
+        </dl>
+    </section>
+    <section>
+
+        <h2> Special offer
+            <a th:href="@{/special_offer/create(pizzaId=*{id})}"
+            ><i class="fa-solid fa-circle-plus"></i></a>
+        </h2>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="offer : *{specialOffer}" th:object="${offer}">
+                <td th:text="*{title}"></td>
+                <td th:text="*{startDate}"></td>
+                <td th:text="*{endDate}"></td>
+                <td>
+                    <a th:href="@{/special_offer/edit/{id}(id=*{id})}" title="edit"><i
+                            class="fa-solid fa-pen-to-square"></i></a>
+                </td>
+                <td>
+                    <form th:action="@{/special_offer/delete/{id}(id=*{id})}" method="POST"
+                          onsubmit="return confirm('Are you sure?')">
+
+                        <button type="submit" class="btn bg-danger text-light"><i
+                                class="fa-solid fa-trash"></i>
+                        </button>
+                    </form>
+                </td>
+
+            </tr>
+            </tbody>
+        </table>
+        <div th:if="*{specialOffer.size() == 0}" class="alert alert-info">The list is empty</div>
+    </section>
+
 </div>
 
 

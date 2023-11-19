@@ -27,11 +27,8 @@ public class PizzaController {
     public String index(@RequestParam Optional<String> search, Model model) {
         List<Pizza> pizzaList;
         if (search.isPresent()) {
-            // se il parametro di ricerca è presente filtro la lista dei libri d
             pizzaList = PizzaRepository.findByNameContainingIgnoreCase( search.get() );
         } else {
-            // altrimenti prendo tutti i libri non filtrati
-            // bookRepository recupera da database la lista di tutti i libri
             pizzaList = PizzaRepository.findAll();
         }
 

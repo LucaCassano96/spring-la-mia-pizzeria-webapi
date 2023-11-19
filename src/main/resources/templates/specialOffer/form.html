@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:insert="fragments/resources :: headResources('Create Special offer')">
+
+</head>
+
+<body>
+
+<nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
+<div class="container my-5">
+
+    <h1>Create a new offer</h1>
+    <h2 class="text-muted" th:text="${specialOffer.pizza.name}"></h2>
+
+    <div>
+        <form id="offer-create" method="POST" th:action="@{/special_offer/create/store}" th:object="${specialOffer}"
+              class="row gy-2">
+            <div class="mb-3">
+                <label for="title" class="form-label">Titolo</label>
+                <input type="text" class="form-control" id="title" th:field="*{title}" th:errorClass="is-invalid">
+                <div th:if="${#fields.hasErrors('title')}" class="invalid-feedback">
+                    <ul>
+                        <li th:each="err : ${#fields.errors('title')}" th:text="${err}"></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="startDate" class="form-label">Insert start date</label>
+                <input type="date" class="form-control" id="startDate" th:field="*{startDate}"
+                       th:errorClass="is-invalid">
+                <div th:if="${#fields.hasErrors('startDate')}" class="invalid-feedback">
+                    <ul>
+                        <li th:each="err : ${#fields.errors('startDate')}" th:text="${err}"></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="endDate" class="form-label">Insert end date</label>
+                <input type="date" class="form-control" id="endDate" th:field="*{endDate}"
+                       th:errorClass="is-invalid">
+                <div th:if="${#fields.hasErrors('endDate')}" class="invalid-feedback">
+                    <ul>
+                        <li th:each="err : ${#fields.errors('endDate')}" th:text="${err}"></li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <input type="hidden" id="pizza" th:field="*{pizza}">
+            </div>
+            <div>
+                <button class="btn btn-primary" type="submit">Save</button>
+                <a th:href="@{/pizzas/show/{pizzaId}(pizzaId=*{pizza.id})}" class="btn bg-danger text-white">Cancel</a>
+            </div>
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

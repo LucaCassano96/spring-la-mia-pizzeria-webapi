@@ -15,6 +15,9 @@ public class Pizza {
 
     @OneToMany(mappedBy = "pizza", cascade = CascadeType.REMOVE)
     private List<SpecialOffer> specialOffer;
+
+    @ManyToMany
+    private List<Ingredients> ingridients;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -85,5 +88,13 @@ public class Pizza {
 
     public void setSpecialOffer(List<SpecialOffer> specialOffer) {
         this.specialOffer = specialOffer;
+    }
+
+    public List<Ingredients> getIngridients() {
+        return ingridients;
+    }
+
+    public void setIngridients(List<Ingredients> ingridients) {
+        this.ingridients = ingridients;
     }
 }

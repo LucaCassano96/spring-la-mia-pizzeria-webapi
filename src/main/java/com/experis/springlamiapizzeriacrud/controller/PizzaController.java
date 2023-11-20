@@ -1,6 +1,7 @@
 package com.experis.springlamiapizzeriacrud.controller;
 
 import com.experis.springlamiapizzeriacrud.model.Pizza;
+import com.experis.springlamiapizzeriacrud.repository.IngredientsRepository;
 import com.experis.springlamiapizzeriacrud.repository.PizzaRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,9 @@ public class PizzaController {
 
     @Autowired
     private PizzaRepository PizzaRepository;
+
+    @Autowired
+    private IngredientsRepository ingredientsRepository;
 
 
     @GetMapping
@@ -54,6 +58,7 @@ public class PizzaController {
     @GetMapping("/create")
     public String create(Model model) {
         model.addAttribute( "pizza", new Pizza() );
+        model.addAttribute( "ingredientsList", ingredientsRepository.findAll() );
         return "pizzas/create";
     }
 

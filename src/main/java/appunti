@@ -968,3 +968,102 @@ special offer collegate
         MANY TO MANY
 
 
+- creiamo una nuova entità
+
+
+                            @Entity
+                            @Table(name = "Ingredients")
+                            public class Ingredients {
+
+                                @Id
+                                @GeneratedValue(strategy = GenerationType.IDENTITY)
+                                private Integer id;
+                                @NotNull
+                                @NotBlank
+                                @Column(nullable = false)
+                                private String name;
+
+                                public Integer getId() {
+                                    return id;
+                                }
+
+                                public void setId(Integer id) {
+                                    this.id = id;
+                                }
+
+                                public String getName() {
+                                    return name;
+                                }
+
+                                public void setName(String name) {
+                                    this.name = name;
+                                }
+                            }
+
+
+- creiamo degli igredienti da mettere in tabella nelimpot sql scrivo
+
+
+                              INSERT INTO ingredients (name) VALUES ('mozzarella');
+                              INSERT INTO ingredients (name) VALUES ('pomodoro');
+                              INSERT INTO ingredients (name) VALUES ('olive');
+                              INSERT INTO ingredients (name) VALUES ('tonno');
+                              INSERT INTO ingredients (name) VALUES ('verdure');
+                              INSERT INTO ingredients (name) VALUES ('funghi');
+
+-inserisco una lista di ingredienti in pizza e creo la relazione
+
+                                @ManyToMany
+                                private List<Ingredients> ingredients;
+
+-faccio partire il programma
+
+-creiamo un nuovo repository
+
+
+                         @Repository
+                         public interface IngredientsRepository extends JpaRepository<Ingredients, Integer> {
+                         }
+
+-Il pizza controller della create deve mandarci la lista di ingredienti nel tempalte
+
+                            @Autowired
+                            private IngredientsRepository ingredientsRepository;
+
+in create
+
+
+                              //CREATE
+                                 @GetMapping("/create")
+                                 public String create(Model model) {
+                                     model.addAttribute( "pizza", new Pizza() );
+                                     model.addAttribute( "ingredientsList", ingredientsRepository.findAll() );
+                                     return "pizzas/create";
+                                 }
+
+nel template di create inserisco tutti i mei ingredienti
+
+
+                       <div class="form-check" th:each="ing : ${ingredientsList}">
+                            <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    th:value="${ing.id}"
+                                    th:id="${'ing_' + ing.id}">
+                                    th:field="*{ingridients}">
+                            <label class="form-check-label" th:for="${'ing_' + ing.id}" th:text="${ing.name}">
+                            </label>
+                        </div>
+
+-nella show
+
+                   <h3>Ingredients</h3>
+                   <ul th:if="${pizza.ingridients.size() > 0}">
+                       <li th:each="ing : ${pizza.ingridients}" th:text="${ing.name}"></li>
+                   </ul>
+                   <div th:unless="${pizza.ingridients.size() > 0}" class="alert alert-info">The list is empty</div>
+
+
+Da completare
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////

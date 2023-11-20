@@ -1067,3 +1067,357 @@ nel template di create inserisco tutti i mei ingredienti
 Da completare
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+   LOGIN
+
+-prima cosa dobbiamo importare uan dependency nel pom
+
+
+
+                                <dependency>
+                                    <groupId>org.springframework.boot</groupId>
+                                    <artifactId>spring-boot-starter-security</artifactId>
+                                </dependency>
+                                <dependency>
+                                    <groupId>org.springframework.security</groupId>
+                                    <artifactId>spring-security-test</artifactId>
+                                    <scope>test</scope>
+                                </dependency>
+
+-riavviamo l'applicazione
+
+-ora avrò la login e non mi fa accedere a nulla
+trovole le credenziali in console
+Using generated security password: dc03000d-fc4f-4e20-9453-c8b70415a5e7
+
+                        username: user
+                        password: dc03000d-fc4f-4e20-9453-c8b70415a5e7
+
+
+- creo nuova entità User
+
+
+                       @Entity
+                       @Table(name = "users")
+                       public class User {
+
+                           @Id
+                           @GeneratedValue(strategy = GenerationType.IDENTITY)
+                           private Integer id;
+
+                           @NotBlank
+                           private String firstName;
+                           @NotBlank
+                           private String lastName;
+                           @NotBlank
+                           @Email
+                           private String email;
+
+                           private LocalDateTime registeredAt;
+
+                           private String password;
+
+                           @ManyToMany(fetch = FetchType.EAGER)
+                           private Set<Role> roles = new HashSet<>();
+
+                           public Integer getId() {
+                               return id;
+                           }
+
+                           public void setId(Integer id) {
+                               this.id = id;
+                           }
+
+                           public String getFirstName() {
+                               return firstName;
+                           }
+
+                           public void setFirstName(String firstName) {
+                               this.firstName = firstName;
+                           }
+
+                           public String getLastName() {
+                               return lastName;
+                           }
+
+                           public void setLastName(String lastName) {
+                               this.lastName = lastName;
+                           }
+
+                           public String getEmail() {
+                               return email;
+                           }
+
+                           public void setEmail(String email) {
+                               this.email = email;
+                           }
+
+                           public LocalDateTime getRegisteredAt() {
+                               return registeredAt;
+                           }
+
+                           public void setRegisteredAt(LocalDateTime registeredAt) {
+                               this.registeredAt = registeredAt;
+                           }
+
+
+                           public String getPassword() {
+                               return password;
+                           }
+
+                           public void setPassword(String password) {
+                               this.password = password;
+                           }
+
+                           public Set<Role> getRoles() {
+                               return roles;
+                           }
+
+                           public void setRoles(Set<Role> roles) {
+                               this.roles = roles;
+                           }
+                       }
+
+-Creo anche una nuova entità Role per definire che ruolo ha questo user
+
+
+
+
+                        @Entity
+                        @Table(name = "roles")
+                        public class Role {
+
+                            @Id
+                            private Integer id;
+                            private String name;
+
+                            public Integer getId() {
+                                return id;
+                            }
+
+                            public void setId(Integer id) {
+                                this.id = id;
+                            }
+
+                            public String getName() {
+                                return name;
+                            }
+
+                            public void setName(String name) {
+                                this.name = name;
+                            }
+                        }
+
+-riavviamo l'applicazione
+-facciamoci degli utenti di prova
+
+
+                         INSERT INTO roles (id, name) VALUES(1, 'ADMIN');
+                         INSERT INTO roles (id, name) VALUES(2, 'USER');
+
+                         INSERT INTO users (email, first_name, last_name, registered_at, password) VALUES('john@email.com', 'John', 'Doe', '2023-11-20 10:35', '{noop}john');
+                         INSERT INTO users (email, first_name, last_name, registered_at, password) VALUES('jane@email.com', 'Jane', 'Smith', '2023-11-20 10:35','{noop}jane');
+
+                         INSERT INTO users_roles (user_id, roles_id) VALUES(1, 1);
+                         INSERT INTO users_roles (user_id, roles_id) VALUES(1, 2);
+                         INSERT INTO users_roles (user_id, roles_id) VALUES(2, 2);
+
+
+-riavviamo
+
+-ci serve UserDetail e lo creo facendo un nuovo package che chiamo security e ci metto dentro la
+classe DatabaseUserDetails che implementa UserDetails che è una interfaccia di Spring
+
+
+                          public class DatabaseUserDetails implements UserDetails {
+
+                              private Integer id;
+                              private String username;
+                              private String password;
+                              private Set<GrantedAuthority> authorities = new HashSet<>();
+
+
+                              @Override
+                              public Collection<? extends GrantedAuthority> getAuthorities() {
+                                  return this.authorities;
+                              }
+
+                              @Override
+                              public String getPassword() {
+                                  return this.password;
+                              }
+
+                              @Override
+                              public String getUsername() {
+                                  return this.username;
+                              }
+
+                              @Override
+                              public boolean isAccountNonExpired() {
+                                  return true;
+                              }
+
+                              @Override
+                              public boolean isAccountNonLocked() {
+                                  return true;
+                              }
+
+                              @Override
+                              public boolean isCredentialsNonExpired() {
+                                  return true;
+                              }
+
+                              @Override
+                              public boolean isEnabled() {
+                                  return true;
+                              }
+
+                              public Integer getId() {
+                                  return id;
+                              }
+                          }
+
+-ora faccio un costruttore di DatabaseUserDetails
+
+                              public DatabaseUserDetails(User user) {
+                                  this.id = user.getId();
+                                  this.username = user.getEmail();
+                                  this.password = user.getPassword();
+                                  for (Role role : user.getRoles()) {
+                                      this.authorities.add(new SimpleGrantedAuthority(role.getName()));
+                                  }
+
+-creo la UserRepository
+
+
+                                public interface UserRepository extends JpaRepository<User, Integer> {
+
+                                    Optional<User> findByEmail(String email);
+                                }
+
+-creo la DataBaseUserDetailsService
+
+
+                                   @Service
+                                   public class DatabaseUserDetailsService implements UserDetailsService {
+
+                                       @Autowired
+                                       private UserRepository userRepository;
+
+                                       @Override
+                                       public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+                                           Optional<User> loggedUser = userRepository.findByEmail(username);
+                                           if (loggedUser.isPresent()) {
+                                               return new DatabaseUserDetails(loggedUser.get());
+                                           } else {
+
+                                               throw new UsernameNotFoundException(username);
+                                           }
+                                       }
+                                   }
+
+- creo la classe configuration SecurityConfiguration
+
+
+
+                                            @Configuration
+                                            public class SecurityConfiguration {
+
+
+                                                @Bean
+                                                public DatabaseUserDetailsService userDetailsService() {
+                                                    return new DatabaseUserDetailsService();
+                                                }
+
+
+                                                @Bean
+                                                public PasswordEncoder passwordEncoder() {
+                                                    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+                                                }
+
+                                                @Bean
+                                                public DaoAuthenticationProvider authenticationProvider() {
+                                                    // creo un DaoAuthenticationProvider
+                                                    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+                                                    // gli assegno lo UserDetailsService
+                                                    provider.setUserDetailsService( userDetailsService() );
+                                                    // gli assegno il PasswordEncoder
+                                                    provider.setPasswordEncoder( passwordEncoder() );
+                                                    return provider;
+                                                }
+
+                                                @Bean
+                                                public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+                                                    http
+                                                            .authorizeHttpRequests()
+                                                            .requestMatchers( "/ingredients" ).hasAuthority( "ADMIN" )
+                                                            .requestMatchers( "/users" ).hasAuthority( "ADMIN" )
+                                                            .requestMatchers( "/special_offer/**" ).hasAuthority( "ADMIN" )
+                                                            .requestMatchers( HttpMethod.POST, "/pizzas/**" ).hasAuthority( "ADMIN" )
+                                                            .requestMatchers( "/pizzas", "/pizzas/**" ).hasAnyAuthority( "ADMIN", "USER" )
+                                                            .requestMatchers( "/**" ).permitAll()
+                                                            .and().formLogin()
+                                                            .and().logout();
+                                                    return http.build();
+                                                }
+
+                                            }
+
+-riavviamo l'applicazione e testiamo chi può e chi non può fare certe azioni
+-ora dobbiamo fare in modo che solo chi ha i permessi veda certe icone o pulsanti
+-inseriamo una nuova dependency
+
+
+                                            <dependency>
+
+                                              <groupId>org.thymeleaf.extras</groupId>
+
+                                              <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+
+                                            </dependency>
+
+
+-ora partiao dalla navbar e togliamo user inseriamo xmlns
+
+                                   xmlns:sec="http://www.thymeleaf.org"
+
+-ora nel <li> mettiamo il sec se refresho non vedo più (con Jane)  user
+
+                                    sec:authorize="hasAuthority('ADMIN')"
+
+-posso metterlo ovunque mi serva
+
+-posso aggiungere nella mia navbar il nome dello user e il logout
+
+
+
+                    <div class="text-light">
+                        Hi <span sec:authentication="name"></span>
+                        <a th:href="@{/logout}" class="btn btn-light">Logout</a>
+                    </div>
+
+-se voglio creare una pagina dell'utente mi serve il controller dello User
+
+
+                        @Controller
+                        @RequestMapping("/users")
+                        public class UserController {
+
+                            @Autowired
+                            UserRepository userRepository;
+
+                            @GetMapping
+                            public String index(Authentication authentication, Model model) {
+
+                                DatabaseUserDetails principal = (DatabaseUserDetails) authentication.getPrincipal();
+                                User loggedUser = userRepository.findById(principal.getId()).get();
+                                model.addAttribute(loggedUser.getFirstName());
+                                model.addAttribute(loggedUser.getLastName());
+
+                                return "users/index";
+                            }
+
+
+                        }

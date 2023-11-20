@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org">
 <head th:insert="fragments/resources :: headResources('Pizza List')">
 
 </head>
@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="my-3">
+    <div class="my-3" sec:authorize="hasAuthority('ADMIN')">
         <a th:href="@{/pizzas/create}" class="btn btn-primary">Add new pizza</a>
     </div>
 
@@ -48,11 +48,11 @@
             <td>
                 <a th:href="@{/pizzas/show/{id}(id=*{id})}" title="details"><i class="fa-solid fa-pizza-slice"></i></a>
             </td>
-            <td>
+            <td sec:authorize="hasAuthority('ADMIN')">
                 <a th:href="@{/pizzas/edit/{id}(id=*{id})}" title="edit"><i class="fa-solid fa-pen-to-square"></i></a>
             </td>
 
-            <td>
+            <td sec:authorize="hasAuthority('ADMIN')">
                 <form th:action="@{/pizzas/delete/{id}(id=*{id})}" method="POST"
                       onsubmit="return confirm('Are you sure?')">
 

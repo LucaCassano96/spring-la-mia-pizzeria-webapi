@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org">
 <head th:insert="fragments/resources :: headResources('Pizza List')"></head>
 <body>
 <nav th:replace="fragments/navbar :: topNavbar('pizzas')"></nav>
@@ -26,7 +26,7 @@
         </ul>
         <div th:unless="${pizza.ingridients.size() > 0}" class="alert alert-info">The list is empty</div>
 
-        <h2> Special offer
+        <h2 sec:authorize="hasAuthority('ADMIN')"> Special offer
             <a th:href="@{/special_offer/create(pizzaId=*{id})}"
             ><i class="fa-solid fa-circle-plus"></i></a>
         </h2>

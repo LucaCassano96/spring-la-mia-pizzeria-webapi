@@ -1,5 +1,6 @@
 package com.experis.springlamiapizzeriacrud.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -14,6 +15,8 @@ import java.util.List;
 public class Pizza {
 
     @OneToMany(mappedBy = "pizza", cascade = CascadeType.REMOVE)
+
+    @JsonIgnore
     private List<SpecialOffer> specialOffer;
 
     @ManyToMany

@@ -1421,3 +1421,133 @@ classe DatabaseUserDetails che implementa UserDetails che è una interfaccia di 
 
 
                         }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        API
+
+
+-creo nuova classe PizzaRestController nel package api
+
+
+
+                                @RestController
+                                @RequestMapping("/api/v1/pizzas")
+                                @CrossOrigin
+                                public class PizzaRestController {
+
+                                }
+
+-vado in securityConfiguration e aggiungo
+
+
+                                   http.csrf().disable();
+
+-endpoint per la lista di tutti i libri
+
+
+                             @RestController
+                             @RequestMapping("/api/v1/pizzas")
+                             @CrossOrigin
+                             public class PizzaRestController {
+
+                                 private final PizzaRepository pizzaRepository;
+
+
+                                 public PizzaRestController(PizzaRepository pizzaRepository) {
+                                     this.pizzaRepository = pizzaRepository;
+                                 }
+
+                                 @GetMapping
+                                 public ResponseEntity<List<Pizza>> getPizzas(@RequestParam Optional<String> search) {
+                                     List<Pizza> pizzaList;
+                                     if (search.isPresent()) {
+                                         pizzaList = pizzaRepository.findByNameContainingIgnoreCase(search.get());
+                                     } else {
+                                         pizzaList = pizzaRepository.findAll();
+                                     }
+
+
+                                     return new ResponseEntity<>(pizzaList, HttpStatus.OK);
+                                 }
+                             }
+
+-se voglio aggiungere una special offer non mi funziona più e devo aggiungere nel Model di Pizza
+
+
+
+                                         @JsonIgnore
+                                          private List<SpecialOffer> specialOffer;
+
+
+-se voglio i dettagli della pizza
+
+
+
+                         @GetMapping("/{id}")
+                            public ResponseEntity<Pizza> getPizzaDetails(@PathVariable Integer id) {
+                                Optional<Pizza> optionalPizza = pizzaRepository.findById( id );
+                                if (optionalPizza.isPresent()) {
+                                    Pizza pizza = optionalPizza.get();
+                                    return new ResponseEntity<>( pizza, HttpStatus.OK );
+                                } else {
+                                    throw new ResponseStatusException( HttpStatus.NOT_FOUND, "Pizza not found with ID: " + id );
+                                }
+
+                            }
+
+
+-se voglio una create
+
+
+                    public ResponseEntity<Pizza> create(@Valid @RequestBody Pizza pizza) {
+                        try {
+
+                            Pizza newPizza = pizzaRepository.save( pizza );
+
+                            return new ResponseEntity<>( newPizza, HttpStatus.CREATED );
+                        } catch (Exception e) {
+
+                            throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Error creating pizza", e );
+                        }
+
+                    }
+
+- Se voglio la Edit
+
+
+
+
+                        @PutMapping("/{id}")
+                        public ResponseEntity<Pizza> update(@PathVariable Integer id, @Valid @RequestBody Pizza updatedPizza) {
+
+                            Pizza existingPizza = pizzaRepository.findById( id )
+                                    .orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND, "Pizza with id " + id + " not found" ) );
+
+                            existingPizza.setName( updatedPizza.getName() );
+                            existingPizza.setDescription( updatedPizza.getDescription() );
+                            existingPizza.setPhoto_url( updatedPizza.getPhoto_url() );
+                            existingPizza.setPrice( updatedPizza.getPrice() );
+
+                            Pizza savedPizza = pizzaRepository.save( existingPizza );
+
+                            return ResponseEntity.ok( savedPizza );
+                        }
+
+
+-Se voglio la delete
+
+
+
+
+                  @DeleteMapping("/{id}")
+                     public ResponseEntity<Void> delete(@PathVariable Integer id) {
+
+                             Pizza pizzaToDelete = pizzaRepository.findById(id)
+                                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pizza with id " + id + " not found"));
+
+                             pizzaRepository.deleteById(id);
+
+                             return ResponseEntity.noContent().build();
+
+                     }
